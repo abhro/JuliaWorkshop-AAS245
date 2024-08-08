@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.36
+# v0.19.45
 
 using Markdown
 using InteractiveUtils
@@ -16,45 +16,45 @@ using LinearAlgebra
 # ╔═╡ b83ba8db-b9b3-4921-8a93-cf0733cec7aa
 using CUDA
 
-# ╔═╡ a2680f00-7c9a-11ed-2dfe-d9cd445f2e57
+# ╔═╡ 9acc4cfe-5e30-43ef-a004-922168675034
 md"""
 # Optimization of Algorithms
+"""
 
+# ╔═╡ 68e8631c-a011-4126-850d-87d74df6c2cd
+md"""
 Julia is a high-performance language. However, like any computer language, certain constructs are faster and use your computer's resources more efficiently. This tutorial will overview how you can use Julia and some of its unique features to enable blazing-fast performance.
 
 However, to achieve good performance, there are a couple of things to keep in mind.
+"""
 
+# ╔═╡ bdd4ccb9-bb43-413d-913b-7093d71bed5d
+md"""
 ## Global Variables and Type Instabilities
+"""
 
-First global variables in Julia are almost always a bad idea. First, from a coding standpoint, they are very hard to reason about since they could change at any moment. However, for Julia, they are also a performance bottleneck. Let's consider a simple function that updates a global array to demonstrate the issue of global arrays.
+# ╔═╡ a2680f00-7c9a-11ed-2dfe-d9cd445f2e57
+md"""
+Global variables in Julia are almost always a bad idea. First, from a coding standpoint, they are very hard to reason about since they could change at any moment. However, for Julia, they are also a performance bottleneck. Let's consider a simple function that updates a global array to demonstrate the issue of global arrays.
 
 ```julia
 begin
-	gl = rand(1000)
+    gl = rand(1000)
 
-	function global_update()
-		for i in eachindex(gl)
-			gl[i] += 1
-		end
-	end
+    function global_update()
+        for i in eachindex(gl)
+            gl[i] += 1
+        end
+    end
 end
 ```
 """
 
 # ╔═╡ b90d6694-b170-4646-b5a0-e477d4fe6f50
-begin
-	gl = rand(1000)
-
-	function global_update()
-		for i in eachindex(gl)
-			gl[i] += 1
-		end
-	end
-end
 
 # ╔═╡ 5ed407ea-4bba-4eaf-b47a-9ae95b28abba
 md"""
-Now let's check the performance of this function. To do this, we will use the excellent benchmarking package [`BenchmarTools.jl`](https://github.com/JuliaCI/BenchmarkTools.jl) and the macro `@benchmark`, which runs the function multiple times and outputs a histogram of the time it took to execute the function
+Now let's check the performance of this function. To do this, we will use the excellent benchmarking package [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl) and the macro `@benchmark`, which runs the function multiple times and outputs a histogram of the time it took to execute the function
 
 ```julia
 using BenchmarkTools
@@ -72,6 +72,7 @@ BenchmarkTools.Trial: 10000 samples with 1 evaluation.
 
  Memory estimate: 77.77 KiB, allocs estimate: 3978.
 ```
+
 ** Note this was run on a Intel Core i7 i7-1185G7 processors so your benchmarks may differ **
 """
 
@@ -88,7 +89,7 @@ md"""
 
 # ╔═╡ 2310c578-95d8-4af0-a572-d7596750dfcc
 md"""
-Looking at the histogram, we see that the minimum time is 122 μs to update a vector! We can get an idea of why this is happening by looking at the total number of allocations we made while updating the vector. Since we are updating the array in place, there should be no allocations. 
+Looking at the histogram, we see that the minimum time is 122 μs to update a vector! We can get an idea of why this is happening by looking at the total number of allocations we made while updating the vector. Since we are updating the array in place, there should be no allocations.
 
 To see what is happening here, Julia provides several code introspection tools.
 Here we will use `@code_warntype`
@@ -142,9 +143,9 @@ Typically the standard way to fix this issue is to pass the offending variable a
 
 ```julia
 function better_update!(x)
-	for i in eachindex(x)
-		x[i] += 1
-	end
+    for i in eachindex(x)
+        x[i] += 1
+    end
 end
 ```
 """
@@ -181,20 +182,24 @@ md"""
 we see that the red font is gone. This is a general thing to keep in mind when using Julia. Try not to use the global scope in performance-critical parts. Instead, place the computation inside a function.
 """
 
-# ╔═╡ b89b329e-0dd1-4b0b-82a1-19d104dcf430
+# ╔═╡ c4297b3e-83b1-4d64-85a6-a4099f204f5d
 md"""
 ## Types
+"""
+
+# ╔═╡ b89b329e-0dd1-4b0b-82a1-19d104dcf430
+md"""
 
 Julia is a typed but dynamic language. The use of types is part of the reason that Julia can produce fast code. If Julia can infer the types inside the body of a function, it will compile efficient machine code. However, if this is not the case, the function will become **type unstable**. We saw this above with our global example, but these type instabilities can also occur in other seemingly simple functions.
 
 For example let's start with a simple sum
 ```julia
 function my_sum(x)
-	s = 0
-	for xi in x
-		s += xi
-	end
-	return
+    s = 0
+    for xi in x
+        s += xi
+    end
+    return
 end
 ```
 
@@ -212,7 +217,7 @@ Analyzing this with `@code_warntype` shows a small type instability.
 ```
 
 !!! tip
-	Remember to look for red-highlighted characters
+    Remember to look for red-highlighted characters
 """
 
 # ╔═╡ b050c5a4-3034-4a14-ae3a-b6eac433f275
@@ -220,10 +225,10 @@ Analyzing this with `@code_warntype` shows a small type instability.
 
 # ╔═╡ 30e2be6c-f990-467a-85f9-a37f84f145ea
 md"""
-In this case, we see that Julia inserted a type instabilities since it could not determine the specific type of `s`. This is because when we initialized `s`, we used the value `0` which is an integer. Therefore, when we added xi to it, Julia determined that the type of `s` could either be an `Int` or `Float`. 
+In this case, we see that Julia inserted a type instabilities since it could not determine the specific type of `s`. This is because when we initialized `s`, we used the value `0` which is an integer. Therefore, when we added xi to it, Julia determined that the type of `s` could either be an `Int` or `Float`.
 
 !!! note
-	In Julia 1.8, the compiler is actually able to do something called [`union splitting`](https://julialang.org/blog/2018/08/union-splitting/), preventing this type instability from being a problem. However, it is still good practice to write more generic code.
+    In Julia 1.8, the compiler is actually able to do something called [`union splitting`](https://julialang.org/blog/2018/08/union-splitting/), preventing this type instability from being a problem. However, it is still good practice to write more generic code.
 """
 
 # ╔═╡ 32516afd-4d37-4739-bee5-8cebb2508276
@@ -232,11 +237,11 @@ To fix this we need to initialize `s` to be more generic. That can be done with 
 
 ```julia
 function my_sum_better(x)
-	s = zero(eltype(x))
-	for xi in x
-		s += xi
-	end
-	return s
+    s = zero(eltype(x))
+    for xi in x
+        s += xi
+    end
+    return s
 end
 ```
 """
@@ -259,16 +264,16 @@ Running `@code_warntype` we now get
 md"""
 `zero` is a generic function that will create a `0` element that matches the type of the elements of the vector `x`.
 
-One important thing to note is that while Julia uses types to optimize the code, using types in the function arguments does not impact performance at all. 
+One important thing to note is that while Julia uses types to optimize the code, using types in the function arguments does not impact performance at all.
 
 To see this let's look at an explicit version of `my_sum`
 ```julia
 function my_sum_explicit(x::Vector{Float64})
-	s = zero(eltype(x))
-	for xi in x
-		s += xi
-	end
-	return s
+    s = zero(eltype(x))
+    for xi in x
+        s += xi
+    end
+    return s
 end
 ```
 """
@@ -326,7 +331,7 @@ md"""
 
 # ╔═╡ f15013ed-b592-43f6-95ec-820480d804ef
 md"""
-Being overly specific with types in Julia is considered bad practice since it prevents composability with other libraries in Julia. For example, 
+Being overly specific with types in Julia is considered bad practice since it prevents composability with other libraries in Julia. For example,
 
 ```julia
 my_sum_explicit(Float32.(gl))
@@ -338,15 +343,15 @@ my_sum_explicit(Float32.(gl))
 
 # ╔═╡ 2861d873-6860-4d16-86af-3aebc57a9914
 md"""
-gives a method error because we told the compiler that the function could only accept `Float64`. In Julia, types are mostly used for `dispatch` i.e., selecting which function to use. However, there is one important instance where Julia requires that the types be specific. When defining a composite type or `struct`. 
+gives a method error because we told the compiler that the function could only accept `Float64`. In Julia, types are mostly used for dispatch i.e., selecting which function to use. However, there is one important instance where Julia requires that the types be specific. When defining a composite type or `struct`.
 
 For example
 ```julia
-begin 
-	struct MyType
-		a::AbstractArray
-	end
-	Base.getindex(x, i) = x.a[i]
+begin
+    struct MyType
+        a::AbstractArray
+    end
+    Base.getindex(x, i) = x.a[i]
 end
 ```
 """
@@ -369,20 +374,20 @@ In this case, the `getindex` function is type unstable
 
 # ╔═╡ 7175833a-f7e3-4b83-9d5d-869b5ad2c78b
 md"""
-This is because Julia is not able to determine the type of `x.a` until runtime and so the compiler is unable to optimize the function.  This is because `AbstractArray` is an abstract type. 
+This is because Julia is not able to determine the type of `x.a` until runtime and so the compiler is unable to optimize the function.  This is because `AbstractArray` is an abstract type.
 
 !!! tip
-	For maximum performance only use concrete types as `struct` fields/properties.
+    For maximum performance only use concrete types as `struct` fields/properties.
 
-To fix this we can use *parametric types* 
+To fix this we can use *parametric types*
 
 ```julia
 begin
-	struct MyType2{A<:AbstractArray}
-		a::A
-	end
+    struct MyType2{A<:AbstractArray}
+        a::A
+    end
 
-	Base.getindex(a::MyType2, i) = a.a[i]
+    Base.getindex(a::MyType2, i) = a.a[i]
 end
 ```
 """
@@ -406,37 +411,42 @@ md"""
 and now because the exact layout `MyType2` is concrete, Julia is able to efficiently compile the code.
 """
 
+# ╔═╡ 2b291622-0cea-41b9-98aa-87d3de047082
+md"""
+### Additional Tools
+"""
+
 # ╔═╡ a8c622c8-2eaf-4792-94fd-e18d622c3b23
 md"""
-
-### Additional Tools
-
 In addition to `@code_warntype` Julia also has a number of other tools that can help diagnose type instabilities or performance problems:
-  - [`Cthulhu.jl`](https://github.com/JuliaDebug/Cthulhu.jl): Recursively moves through a function and outputs the results of type inference.
-  - [`JET.jl`](https://github.com/aviatesk/JET.jl): Employs Julia's type inference system to detect potential performance problems as well as bugs.
-  - [`ProfileView.jl`](https://github.com/timholy/ProfileView.jl) Julia profiler and flame graph for evaluating function performance. 
+  - [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl): Recursively moves through a function and outputs the results of type inference.
+  - [JET.jl](https://github.com/aviatesk/JET.jl): Employs Julia's type inference system to detect potential performance problems as well as bugs.
+  - [ProfileView.jl](https://github.com/timholy/ProfileView.jl) Julia profiler and flame graph for evaluating function performance.
+"""
+
+# ╔═╡ c9f50653-9e26-4780-82f3-1867fd49ce44
+md"""
+## Data Layout
 """
 
 # ╔═╡ 20eff914-5853-4993-85a2-dfb6a8e2c14d
 md"""
-## Data Layout
-
-Besides ensuring your function is type stable, there are a number of other performance issues to keep in mind with using Julia. 
+Besides ensuring your function is type stable, there are a number of other performance issues to keep in mind with using Julia.
 
 When using higher-dimensional arrays like matrices, the programmer should remember that Julia uses a `column-major order`. This implies that indexing Julia arrays should be done so that the first index changes the fastest. For example
 
 ```julia
 function row_major_matrix!(a::AbstractMatrix)
-	for i in axes(a, 1)
-		for j in axes(a, 2)
-			a[i, j] = 2.0
-		end
-	end
-	return a
+    for i in axes(a, 1)
+        for j in axes(a, 2)
+            a[i, j] = 2.0
+        end
+    end
+    return a
 end
 ```
 !!! note
-	We use the bang symbol !. This is stardard Julia convention and signals that the function is mutating.
+    We use the bang symbol `!`. This is stardard Julia convention and signals that the function is mutating.
 
 """
 
@@ -446,7 +456,7 @@ end
 # ╔═╡ da99dabc-f9e5-4f5e-8724-45ded36270dc
 md"""
 !!! tip
-	Here we use an function to fill the matrix. This is just for clarity. The more Julian way to do this would be to use the `fill` or `fill!` functions.
+    Here we use an function to fill the matrix. This is just for clarity. The more Julian way to do this would be to use the `fill` or `fill!` functions.
 """
 
 # ╔═╡ b3bb4563-e0f6-4edb-bae1-1a91f64b628f
@@ -466,17 +476,17 @@ md"""
 This is very slow! This is because Julia uses column-major ordering. Computers typically store memory sequentially. That means that the most efficient way to access parts of a vector is to do it in order. For 1D arrays there is no ambiguity. However, for higher dimensional arrays a language must make a choice. Julia follows Matlab and Fortrans conventions and uses column-major ordering. This means that matrices are stored column-wise. In a for-loop this means that the inner index should change the fastest.
 
 !!! note
-	For a more complete introduction to computere memory and Julia see [https://book.sciml.ai/notes/02-Optimizing_Serial_Code/]()
+    For a more complete introduction to computere memory and Julia see <https://book.sciml.ai/notes/02-Optimizing_Serial_Code/>
 
 ```julia
 function column_major_matrix!(a::AbstractMatrix)
-	for i in axes(a, 1)
-		for j in axes(a, 2)
-			# The j index goes first
-			a[j, i] = 2.0
-		end
-	end
-	return a
+    for i in axes(a, 1)
+        for j in axes(a, 2)
+            # The j index goes first
+            a[j, i] = 2.0
+        end
+    end
+    return a
 end
 ```
 """
@@ -500,10 +510,10 @@ To make iterating more automatic, Julia also provides a generic CartesianIndices
 
 ```julia
 function cartesian_matrix!(a::AbstractMatrix)
-	for I in CartesianIndices(a)
-		a[I] = 2.0
-	end
-	return a
+    for I in CartesianIndices(a)
+        a[I] = 2.0
+    end
+    return a
 end
 ```
 """
@@ -528,9 +538,9 @@ md"""
 
 # ╔═╡ 16b55184-b515-47c8-bbb3-f899a920e9f8
 md"""
-One of Julia's greatest strengths over python is surprisingly its ability to vectorize algorithms and **fuse** multiple algorithms together. 
+One of Julia's greatest strengths over python is surprisingly its ability to vectorize algorithms and **fuse** multiple algorithms together.
 
-In python to get speed you typically need to use numpy to vectorize operations. For example, to compute the operation `x*y + c^3` you would do 
+In python to get speed you typically need to use numpy to vectorize operations. For example, to compute the operation `x*y + c^3` you would do
 ```python
 python> x*y + c**3
 ```
@@ -540,7 +550,7 @@ python> a = x*y
 python> b = c**3
 python> out = a + b
 ```
-What this means is that python/numpy is not able to fuse multiple operations together. This essentially loops through the data twice and can lead to substantial overhead. 
+What this means is that python/numpy is not able to fuse multiple operations together. This essentially loops through the data twice and can lead to substantial overhead.
 
 To demonstrate this, let's first write the `numpy` version of this simple function
 """
@@ -564,11 +574,11 @@ First let's use PyCall and numpy to do the computation
 
 # ╔═╡ 60e55645-ab59-4ea7-8009-9db7d0aea2e6
 begin
-	py"""
-	def bench_np(x, y, c):
-		return x*y + c**3 
-	"""
-	bench_np = py"bench_np"
+    py"""
+    def bench_np(x, y, c):
+        return x*y + c**3
+    """
+    bench_np = py"bench_np"
 end
 
 # ╔═╡ 35f818c2-acee-4d20-9eb3-0c3ae37f3762
@@ -587,22 +597,22 @@ Now to get started with Julia we will use a simple for loop.
 
 ```julia
 function serial_loop(x, y, c)
-	out = similar(x)
-	for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    out = similar(x)
+    for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 ```
 """
 
 # ╔═╡ 924d11a7-5161-4b13-a1f6-a1a8530736da
 function serial_loop(x, y, c)
-	out = similar(x)
-	for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    out = similar(x)
+    for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 
 # ╔═╡ 40381501-952a-48a5-9a28-ee4bf1c65fd4
@@ -621,30 +631,30 @@ And right away, we have almost a factor of 4X speed increase in Julia compared t
 
 However, we can make this loop faster! Julia automatically checks the bounds of an array every loop iteration. This makes Julia memory safe but adds overhead to the loop.
 
-!!! warning 
-	`@inbounds` used incorrectly can give wrong results or even cause Julia to  SEGFAULT
+!!! warning
+    `@inbounds` used incorrectly can give wrong results or even cause Julia to  SEGFAULT
 
 ```julia
 function serial_loop_inbounds(x, y, c)
-	out = similar(x)
-	@inbounds for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    out = similar(x)
+    @inbounds for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 ```
 
 !!! tip
-	If you index with `eachindex` or `CartesianIndices` Julia can often automatically remove the bounds-check for you. The moral - always use Julia's iterator interfaces where possible. This example doesn't because `out` is not included in `eachindex`
+    If you index with `eachindex` or `CartesianIndices` Julia can often automatically remove the bounds-check for you. The moral - always use Julia's iterator interfaces where possible. This example doesn't because `out` is not included in `eachindex`
 """
 
 # ╔═╡ 54a92a14-405a-45d1-ad3a-5f42e4ce8789
 function serial_loop_inbounds(x, y, c)
-	out = similar(x)
-	@inbounds for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    out = similar(x)
+    @inbounds for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 
 # ╔═╡ 946da67e-5aff-4de9-ba15-715a05264c4d
@@ -659,27 +669,27 @@ md"""
 
 # ╔═╡ db4ceb7c-4ded-4048-88db-fd15b3231a5c
 md"""
-That is starting to look better. Now we can do one more thing. Looking at the results we see that we are still allocating in this loop. We can fix this by explicitly passing the output buffer. 
+That is starting to look better. Now we can do one more thing. Looking at the results we see that we are still allocating in this loop. We can fix this by explicitly passing the output buffer.
 """
 
 # ╔═╡ 575d1656-0a0d-40ba-a190-74e36c354e8c
 md"""
 ```julia
 function serial_loop!(out, x, y, c)
-	@inbounds for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    @inbounds for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 ```
 """
 
 # ╔═╡ fc2351f5-f808-499d-8251-d12c93a2be0e
 function serial_loop!(out, x, y, c)
-	@inbounds for i in eachindex(x, y, c)
-		out[i] = x[i]*y[i] + c[i]^3
-	end
-	return out
+    @inbounds for i in eachindex(x, y, c)
+        out[i] = x[i]*y[i] + c[i]^3
+    end
+    return out
 end
 
 # ╔═╡ 2bd7d41e-f2c9-47cd-8d5b-a2cfef84a830
@@ -697,25 +707,25 @@ md"""
 
 # ╔═╡ c14acc67-dbb2-4a86-a811-de857769a472
 md"""
-With just two changes, we have sped up our original function by almost a factor of 2. However, compared to NumPy, we have had to write a lot more code. 
+With just two changes, we have sped up our original function by almost a factor of 2. However, compared to NumPy, we have had to write a lot more code.
 
-Fortunately, writing these explicit loops, while fast, is not required to achieve good performance in Julia. Julia provides its own *vectorization* procedure using the 
+Fortunately, writing these explicit loops, while fast, is not required to achieve good performance in Julia. Julia provides its own *vectorization* procedure using the
 `.` syntax. This is known as *broadcasting* and results in Julia being able to apply elementwise operations to a collection of objects.
 
 To demonstrate this, we can rewrite our optimized `serial_loop` function just as
 
 ```julia
 function bcast_loop(x, y, c)
-	return x.*y .+ c.^3
-	# or @. x*y + c^3
+    return x.*y .+ c.^3
+    # or @. x*y + c^3
 end
 ```
 """
 
 # ╔═╡ f9a938d8-dce9-4ef0-967e-5b3d5384ca9b
 function bcast_loop(x, y, c)
-	return x.*y .+ c.^3
-	# or @. x*y + c^3
+    return x.*y .+ c.^3
+    # or @. x*y + c^3
 end
 
 # ╔═╡ 38bafb52-14f0-4a42-8e73-de1ada31c87e
@@ -734,16 +744,16 @@ Unlike Python this syntax can even be used to prevent allocations!
 
 ```julia
 function bcast_loop!(out, x, y, c)
-	out .= x.*y .+ c.^3
-	# or @. out = x*y + c^3
+    out .= x.*y .+ c.^3
+    # or @. out = x*y + c^3
 end
 ```
 """
 
 # ╔═╡ 168aee22-6769-4077-a9da-a27689e6bb32
 function bcast_loop!(out, x, y, c)
-	out .= x.*y .+ c.^3
-	# or @. out = x*y + c^3
+    out .= x.*y .+ c.^3
+    # or @. out = x*y + c^3
 end
 
 # ╔═╡ 985cd6ec-bd2d-4dd9-bfbe-0bb066036150
@@ -758,7 +768,7 @@ md"""
 
 # ╔═╡ 587d98d8-f805-4c4f-bf2f-1887d86adf05
 md"""
-Both of our broadcasting functions perform identically to our hand-tuned for loops. How is this possible? The main reason is that Julia's elementwise operations or broadcasting automatically **fuses**. This means that Julia's compiler eventually compiles the broadcast expression to a single loop, preventing intermediate arrays from ever needing to be formed. 
+Both of our broadcasting functions perform identically to our hand-tuned for loops. How is this possible? The main reason is that Julia's elementwise operations or broadcasting automatically **fuses**. This means that Julia's compiler eventually compiles the broadcast expression to a single loop, preventing intermediate arrays from ever needing to be formed.
 """
 
 # ╔═╡ ea2e2140-b826-4a05-a84c-6309241da0e7
@@ -767,7 +777,7 @@ Julia's broadcasting interface is also generic and a lot more powerful than the 
 """
 
 # ╔═╡ e8c1c746-ce30-4bd9-a10f-c68e3823faac
-A = [rand(50,50) for _ in 1:50] 
+A = [rand(50,50) for _ in 1:50]
 
 # ╔═╡ e885bbe5-f7ec-4f6a-80fd-d6314179a3cd
 md"""
@@ -791,7 +801,7 @@ md"""
 ```
 
 !!! tip
-	This will only work if you have CUDA installed and a NVIDIA GPU.
+    This will only work if you have CUDA installed and a NVIDIA GPU.
 """
 
 # ╔═╡ 687b18c3-52ae-48fa-81d6-c41b48edd719
@@ -800,7 +810,7 @@ md"""
 # ╔═╡ dcd6c1f3-ecb8-4a3f-ae4f-3c5b6f8494e7
 md"""
 !!! note
-	`cu` is the function that moves the data on the CPU to the GPU. See the parallel computing tutorial for more information about GPU based parallelism in Julia.
+    `cu` is the function that moves the data on the CPU to the GPU. See the parallel computing tutorial for more information about GPU based parallelism in Julia.
 """
 
 # ╔═╡ 20bcc70f-0c9f-40b6-956a-a286cea393f8
@@ -816,8 +826,12 @@ This is just the start of various performance tips in Julia. There exist many ot
 
 # ╔═╡ 97f7a295-5f33-483c-8a63-b74c8f79eef3
 
+
 # ╔═╡ Cell order:
 # ╟─5d8d2585-5c04-4f33-b547-8f44b3336f96
+# ╟─9acc4cfe-5e30-43ef-a004-922168675034
+# ╟─68e8631c-a011-4126-850d-87d74df6c2cd
+# ╟─bdd4ccb9-bb43-413d-913b-7093d71bed5d
 # ╟─a2680f00-7c9a-11ed-2dfe-d9cd445f2e57
 # ╠═b90d6694-b170-4646-b5a0-e477d4fe6f50
 # ╟─5ed407ea-4bba-4eaf-b47a-9ae95b28abba
@@ -834,6 +848,7 @@ This is just the start of various performance tips in Julia. There exist many ot
 # ╟─934552be-59f8-4af4-86ad-711328035876
 # ╠═d5d35977-e8ef-4fd6-9573-5402616407d6
 # ╟─1f3bfcc0-25f5-4c42-a989-0f3eb344eca8
+# ╟─c4297b3e-83b1-4d64-85a6-a4099f204f5d
 # ╟─b89b329e-0dd1-4b0b-82a1-19d104dcf430
 # ╠═4f17c95e-8e0f-414d-ab62-413d7a848221
 # ╟─946d91d1-7c37-4c35-b967-8b98856fb431
@@ -865,7 +880,9 @@ This is just the start of various performance tips in Julia. There exist many ot
 # ╟─8ff6ad52-b079-4b0c-8a84-56adc8796bbe
 # ╠═e9e8ba32-1762-43eb-9b51-8d4bc81d35a9
 # ╟─0898b019-488d-45b3-a8c2-cd72b4491049
+# ╟─2b291622-0cea-41b9-98aa-87d3de047082
 # ╟─a8c622c8-2eaf-4792-94fd-e18d622c3b23
+# ╟─c9f50653-9e26-4780-82f3-1867fd49ce44
 # ╟─20eff914-5853-4993-85a2-dfb6a8e2c14d
 # ╠═4f4dde5e-21f3-4042-a91d-cd2c474a2279
 # ╟─da99dabc-f9e5-4f5e-8724-45ded36270dc
